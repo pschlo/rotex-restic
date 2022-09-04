@@ -1,6 +1,10 @@
 #!/bin/bash
 
-. ~/script/env.sh
+# get directory where this script is located
+ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+. "$ROOT/env.sh"
+
 
 send_telegram () {
     echo -e "\nsending Telegram message"
@@ -30,7 +34,7 @@ echo -e "$(timestamp)"
 echo -e "----------------------------------------------------------------------------------------"
 
 # check if rotex cloud is mounted
-if ! [[ $(findmnt ~/cloud) ]]
+if ! [[ $(findmnt "$ROOT/cloud") ]]
 then
     echo -e "ERR: rotex cloud is not mounted"
     send_error "cloud is not mounted"

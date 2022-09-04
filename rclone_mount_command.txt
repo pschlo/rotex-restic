@@ -1,0 +1,1 @@
+rclone mount -v --read-only --transfers=10 --fast-list --max-backlog=-1 rotex-cloud: cloud/
