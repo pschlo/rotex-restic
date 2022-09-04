@@ -30,7 +30,7 @@ echo -e "$(timestamp)"
 echo -e "----------------------------------------------------------------------------------------"
 
 # check if rotex cloud is mounted
-if ! [[ $(mount | grep ^rotex-cloud:) ]]
+if ! [[ $(findmnt ~/cloud) ]]
 then
     echo -e "ERR: rotex cloud is not mounted"
     send_error "cloud is not mounted"
