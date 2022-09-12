@@ -7,7 +7,7 @@ ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 
 send_telegram () {
-    echo -e "\nsending Telegram message"
+    echo -e "sending Telegram message"
     curl -X POST \
     --no-progress-meter \
     -H 'Content-Type: application/json' \
@@ -30,11 +30,11 @@ send_succ () {
 
 
 
-echo -e "$(timestamp)"
+echo -e "LOG $(timestamp)"
 echo -e "----------------------------------------------------------------------------------------"
 
 # check if rotex cloud is mounted
-if ! [[ $(findmnt "$ROOT/cloud") ]]
+if ! [[ $(findmnt "$SOURCE_PATH") ]]
 then
     echo -e "ERR: rotex cloud is not mounted"
     send_error "cloud is not mounted"
@@ -42,8 +42,8 @@ then
 fi
 
 
-echo -e "\n--- Starting Backup ---"
-restic backup $SOURCE_PATH
+echo -e "\n[$(timestamp)]\n--- STARTING BACKUP ---\n"
+#restic backup --tag rotex_cloud $SOURCE_PATH
 
 if [[ $? -eq 0 ]]
 then
@@ -53,8 +53,9 @@ else
 fi
 
 
-echo -e "\n--- Backup finished, starting cleanup of old backups ---"
-restic forget --prune --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --keep-yearly $KEEP_YEARLY
+echo -e "\n\n[$(timestamp)]\n--- BACKUP FINISHED, CLEANING UP OLD BACKUPS ---\n"
+sleep $DELAY
+restic forget --tag $TAG --prune --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --keep-yearly $KEEP_YEARLY
 
 if [[ $? -eq 0 ]]
 then
@@ -64,7 +65,8 @@ else
 fi
 
 
-echo -e "\n--- Old backups deleted, starting repository check ---"
+echo -e "\n\n[$(timestamp)]\n--- OLD BACKUPS DELETED, CHECKING INTEGRITY ---\n"
+sleep $DELAY
 restic check
 
 if [[ $? -eq 0 ]]
