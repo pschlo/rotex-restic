@@ -43,7 +43,7 @@ fi
 
 
 echo -e "\n[$(timestamp)]\n--- STARTING BACKUP ---\n"
-#restic backup --tag rotex_cloud $SOURCE_PATH
+restic backup --tag rotex_cloud $SOURCE_PATH
 
 if [[ $? -eq 0 ]]
 then
