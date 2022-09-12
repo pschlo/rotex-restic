@@ -55,7 +55,7 @@ fi
 
 echo -e "\n\n[$(timestamp)]\n--- BACKUP FINISHED, CLEANING UP OLD BACKUPS ---\n"
 sleep $DELAY
-restic forget --tag $TAG --prune --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --keep-yearly $KEEP_YEARLY
+restic forget --tag $TAG --group-by tags --prune --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --keep-yearly $KEEP_YEARLY
 
 if [[ $? -eq 0 ]]
 then
