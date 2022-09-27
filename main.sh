@@ -3,75 +3,53 @@
 # get directory where this script is located
 ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-. "$ROOT/env.sh"
+# import variables and functions
+for f in "$ROOT/env/"*.sh; do source $f; done
+source "$ROOT/utils.sh"
+source "$ROOT/telegram.sh"
 
+# create tmp dir
+mkdir -p "$TMP"
 
-send_telegram () {
-    echo -e "sending Telegram message"
-    curl -X POST \
-    --no-progress-meter \
-    -H 'Content-Type: application/json' \
-    -d "{\"chat_id\": $CHAT_ID, \"text\": \"${1}\"}" \
-    https://api.telegram.org/bot$TOKEN/sendMessage
-    echo -e "\n"
-}
-
-timestamp () {
-    echo "$(date +"%Y-%m-%d %T")"
-}
-
-send_error () {
-    send_telegram "❌ ${1}"
-}
-
-send_succ () {
-    send_telegram "✅ ${1}"
-}
+# initialize telegram output
+msg_id=
+init_msg msg_id
 
 
 
-echo -e "LOG $(timestamp)"
-echo -e "----------------------------------------------------------------------------------------"
+# run cloud backup
+set_running $msg_id "cloud"
+source "$ROOT/cloud-backup.sh"
+exit_code=$?
 
-# check if rotex cloud is mounted
-if ! [[ $(findmnt "$SOURCE_PATH") ]]
-then
-    echo -e "ERR: rotex cloud is not mounted"
-    send_error "cloud is not mounted"
-    exit
-fi
-
-
-echo -e "\n[$(timestamp)]\n--- STARTING BACKUP ---\n"
-restic backup --tag rotex_cloud $SOURCE_PATH
-
-if [[ $? -eq 0 ]]
-then
-    send_succ "backup"
+# analyze exit code
+if [[ $exit_code -eq 0 ]]; then
+   set_ok $msg_id "cloud"
 else
-    send_error "backup"
+    case $exit_code in
+        1) msg="backup failed";;
+        2) msg="forget failed";;
+        3) msg="check failed";;
+        10) msg="source not mounted";;
+        *) msg="unknown error";;
+    esac
+    set_fail $msg_id "cloud: $msg"
 fi
 
+exit
 
-echo -e "\n\n[$(timestamp)]\n--- BACKUP FINISHED, CLEANING UP OLD BACKUPS ---\n"
-sleep $DELAY
-restic forget --tag $TAG --group-by tags --prune --keep-daily $KEEP_DAILY --keep-weekly $KEEP_WEEKLY --keep-monthly $KEEP_MONTHLY --keep-yearly $KEEP_YEARLY
 
-if [[ $? -eq 0 ]]
-then
-    send_succ "forget"
+
+# run bitwarden backup
+set_running $msg_id "bitwarden"
+source "$ROOT/bitwarden-backup.sh"
+
+if [[ $? -eq 0 ]]; then
+    set_ok $msg_id "bitwarden"
 else
-    send_error "forget"
+    set_fail $msg_id "bitwarden"
 fi
 
 
-echo -e "\n\n[$(timestamp)]\n--- OLD BACKUPS DELETED, CHECKING INTEGRITY ---\n"
-sleep $DELAY
-restic check
-
-if [[ $? -eq 0 ]]
-then
-    send_succ "check"
-else
-    send_error "check"
-fi
+# remove tmp files
+rm -r "$TMP"
